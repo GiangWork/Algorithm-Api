@@ -81,7 +81,7 @@ class Ask(Resource):
             except ValueError as e:
                 return {"error": f"Không thể parse JSON từ Rasa API: {str(e)}"}, 500
         else:
-            return {"error": "Lỗi kết nối tới Rasa API"}, 500
+            return {"error": f"Lỗi kết nối tới Rasa API: {response.status_code} - {response.text}"}, 500
         
 @ns.route('/recommend-products')
 class RecommendProducts(Resource):
