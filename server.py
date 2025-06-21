@@ -76,7 +76,7 @@ class Ask(Resource):
             }
         }
 
-        response = requests.post(rasa, json={payload})
+        response = requests.post(rasa, json=payload)
         if response.status_code == 200:
             try:
                 bot_response = response.json()
