@@ -122,7 +122,7 @@ class BestSellers(Resource):
         return data
 
 @ns.route('/chatbot-add-to-cart')
-class ChatbotAddToCart:
+class ChatbotAddToCart(Resource):
     @ns.expect(ask_model)
     @jwt_required()
     def post(self):
