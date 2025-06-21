@@ -121,5 +121,41 @@ class BestSellers(Resource):
             return {"error": str(e)}, 400
         return data
 
+@ns.route('/chatbot-add-to-cart')
+class ChatbotAddToCart:
+    @ns.expect(ask_model)
+    @jwt_required()
+    def post(self):
+        data = request.get_json()
+        user_message = data.get("message", "")
+        token = request.headers.get("Authorization", "").replace("Bearer ", "")
+
+        payload = {
+            "sender": "user123",
+            "message": user_message,
+            "metadata": {
+                "token": token
+            }
+        }
+
+        response = requests.post(rasa, json=payload)
+
+        if response.status_code == 200:
+            try:
+                bot_response = response.json()
+                messages = []
+                for msg in bot_response:
+                    if "text" in msg:
+                        messages.append(msg["text"])
+                    if "image" in msg:
+                        messages.append(f'<img src="{msg["image"]}" alt="product image" style="max-width: 200px;" />')
+                full_response = "<br>".join(messages)
+                return {"response": full_response}
+            except ValueError as e:
+                return {"error": f"Không thể parse JSON từ Rasa API: {str(e)}"}, 500
+        else:
+            return {"error": f"Lỗi kết nối tới Rasa API: {response.status_code} - {response.text}"}, 500
+
+
 if __name__ == "__main__":
     app.run(debug=True)
