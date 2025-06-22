@@ -34,23 +34,33 @@ def fetch_all_items(api_url: str, token: str = None):
             break
     return all_items
 
-def get_revenue_statistics(mode="daily", token=None):
+def get_revenue_statistics(mode="daily", token=None, start_date=None, end_date=None):
     orders = fetch_all_items(os.getenv('ORDER_API_URL'), token)
 
     if mode not in ("daily", "monthly", "yearly"):
         raise ValueError("Chế độ không hợp lệ. Chọn: 'daily', 'monthly' hoặc 'yearly'.")
+
+    now = datetime.now()
+
+    if not start_date:
+        start_date = now.replace(day=1)
+    else:
+        start_date = parser.parse(start_date).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if not end_date:
+        end_date = now
+    else:
+        end_date = parser.parse(end_date).replace(hour=23, minute=59, second=59, microsecond=999999)
+
 
     revenue = defaultdict(float)
     order_counts = defaultdict(int)
     canceled_orders = defaultdict(int)
     returned_orders = defaultdict(int)
 
-    # Tổng cộng
     total_orders = 0
     total_canceled = 0
     total_returned = 0
-
-    now = datetime.now()
 
     for order in orders:
         order_date = order.get("orderDate")
@@ -58,18 +68,19 @@ def get_revenue_statistics(mode="daily", token=None):
             continue
 
         try:
-            dt = parser.isoparse(order_date)
+            dt = parser.isoparse(order_date).replace(tzinfo=None)
         except ValueError as e:
             print("Lỗi định dạng ngày:", e)
             continue
 
+        if start_date and dt < start_date:
+            continue
+        if end_date and dt > end_date:
+            continue
+
         if mode == "daily":
-            if dt.year != now.year or dt.month != now.month:
-                continue
             key = dt.strftime("%Y-%m-%d")
         elif mode == "monthly":
-            if dt.year != now.year:
-                continue
             key = f"{dt.year}-{dt.month:02d}"
         elif mode == "yearly":
             key = str(dt.year)
@@ -102,16 +113,27 @@ def get_revenue_statistics(mode="daily", token=None):
         }
     }
 
-def get_best_selling_products(top_n=10, mode="daily", token=None):
+def get_best_selling_products(top_n=10, mode="daily", token=None, start_date=None, end_date=None):
     orders = fetch_all_items(os.getenv('ORDER_API_URL'), token)
     products = fetch_all_items(os.getenv('PRODUCT_API_URL'), token)
 
     if mode not in ("daily", "monthly", "yearly"):
         raise ValueError("Mode không hợp lệ. Chọn 'daily', 'monthly' hoặc 'yearly'.")
 
+    now = datetime.now()
+
+    if not start_date:
+        start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    else:
+        start_date = parser.parse(start_date).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    if not end_date:
+        end_date = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    else:
+        end_date = parser.parse(end_date).replace(hour=23, minute=59, second=59, microsecond=999999)
+
     product_map = {p["id"]: p for p in products}
     grouped_sales = defaultdict(lambda: defaultdict(int))
-    now = datetime.now()
 
     for order in orders:
         order_date = order.get("orderDate")
@@ -120,19 +142,20 @@ def get_best_selling_products(top_n=10, mode="daily", token=None):
             continue
 
         try:
-            dt = parser.isoparse(order_date)
+            dt = parser.isoparse(order_date).replace(tzinfo=None)
         except ValueError as e:
             print("Lỗi định dạng ngày:", e)
             continue
 
+        # Lọc theo khoảng thời gian đúng
+        if not (start_date <= dt <= end_date):
+            continue
+
+        # Tính key theo mode
         if mode == "daily":
-            if dt.year != now.year or dt.month != now.month:
-                continue
             key = dt.strftime("%Y-%m-%d")
         elif mode == "monthly":
-            if dt.year != now.year:
-                continue
-            key = f"{dt.year}-{dt.month:02d}"
+            key = dt.strftime("%Y-%m")
         elif mode == "yearly":
             key = str(dt.year)
 

@@ -110,10 +110,12 @@ class RecommendProducts(Resource):
 class Revenue(Resource):
     @role_required("Admin")
     def get(self):
-        mode = request.args.get("mode", "monthly")
+        mode = request.args.get("mode", "daily")
+        start_date = request.args.get("startDate")
+        end_date = request.args.get("endDate")
         token = request.headers.get("Authorization", "").replace("Bearer ", "")
         try:
-            data = get_revenue_statistics(mode=mode, token=token)
+            data = get_revenue_statistics(mode=mode, token=token, start_date=start_date, end_date=end_date)
         except ValueError as e:
             return {"error": str(e)}, 400
         return data
@@ -122,11 +124,13 @@ class Revenue(Resource):
 class BestSellers(Resource):
     @role_required("Admin")
     def get(self):
-        mode = request.args.get("mode", "monthly")
+        mode = request.args.get("mode", "daily")
+        start_date = request.args.get("startDate")
+        end_date = request.args.get("endDate")
         top_n = int(request.args.get("top_n", 10))
         token = request.headers.get("Authorization", "").replace("Bearer ", "")
         try:
-            data = get_best_selling_products(top_n=top_n, mode=mode, token=token)
+            data = get_best_selling_products(top_n=top_n, mode=mode, token=token, start_date=start_date, end_date=end_date)
         except ValueError as e:
             return {"error": str(e)}, 400
         return data
