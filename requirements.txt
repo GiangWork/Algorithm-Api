@@ -1,5 +1,3 @@
-setuptools
-wheel
 absl-py==1.4.0
 aio-pika==8.2.3
 aiofiles==24.1.0
